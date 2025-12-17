@@ -104,7 +104,7 @@
             font-size: 42px;
             margin: 0;
             font-weight: 600;
-            color: #fff;
+            color: #ffdc69;
             text-shadow: 0 0 20px rgba(255, 200, 100, 0.6);
             text-align: center;
         }
@@ -356,7 +356,8 @@
         let handLandmarker, video, lastVideoTime = -1;
 
         const ossImageUrls = [
-         // 请在这里添加图片链接
+            // 图片链接放这里，http开头的url
+
         ];
 
         window.switchTheme = (themeName) => {
@@ -433,23 +434,24 @@
 
         function setupLights() {
             const t = THEMES.CLASSIC;
-            ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            ambientLight = new THREE.AmbientLight(0xffffff, 0.8); // 提高环境光强度 (从0.5到0.8)
             scene.add(ambientLight);
-            innerLight = new THREE.PointLight(t.light, 3, 30);
+            innerLight = new THREE.PointLight(t.light, 4, 30);   // 提高点光源强度 (从3到4)
             innerLight.position.set(0, 6, 0);
             mainGroup.add(innerLight);
-            spotLight = new THREE.SpotLight(t.light, 1200);
+            spotLight = new THREE.SpotLight(t.light, 1500);      // 提高聚光灯强度 (从1200到1500)
             spotLight.position.set(30, 40, 40);
-            spotLight.angle = 0.5; spotLight.penumbra = 0.5;
+            spotLight.angle = 0.5;
+            spotLight.penumbra = 0.5;
             scene.add(spotLight);
         }
 
         function setupPostProcessing() {
             const renderScene = new RenderPass(scene, camera);
             bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-            bloomPass.threshold = 0.95;
-            bloomPass.strength = 1.2;
-            bloomPass.radius = 0.6;
+            bloomPass.threshold = 0.8;
+            bloomPass.strength = 1.0;
+            bloomPass.radius = 0.2;
             composer = new EffectComposer(renderer);
             composer.addPass(renderScene);
             composer.addPass(bloomPass);
@@ -714,7 +716,7 @@
         function addOSSImages() { ossImageUrls.forEach(url => addOSSImageToScene(url)); }
 
         function createPhotoObject(texture = null) {
-            const maxSize = 1.5; const framePadding = 0.15;
+            const maxSize = 1.5; const framePadding = 0.05;
             let photoWidth = 1.2, photoHeight = 1.2;
             if (texture && texture.image) {
                 const aspect = texture.image.width / texture.image.height;
