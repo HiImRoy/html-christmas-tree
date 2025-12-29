@@ -52,7 +52,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding-top: 40px;
+            padding-top: 10px;
             transition: opacity 0.5s ease;
         }
 
@@ -89,7 +89,7 @@
             width: 40px;
             height: 40px;
             border: 2px solid rgba(255, 255, 255, 0.1);
-            border-top: 2px solid #ffcc66;
+            border-top: 2px solid #ffd500;
             border-radius: 50%;
             animation: spin 1s infinite linear;
         }
@@ -102,17 +102,18 @@
 
         h1 {
             font-size: 42px;
-            margin: 0;
-            font-weight: 600;
-            color: #ffdc69;
+            margin: 5;
+            font-weight: 800;
+            color: #ffaa00;
             text-shadow: 0 0 20px rgba(255, 200, 100, 0.6);
             text-align: center;
+            font-style: italic;
         }
 
         h2 {
-            font-size: 16px;
+            font-size: 12px;
             margin: 5px 0 15px 0;
-            color: #ffcc66;
+            color: #df860a;
             opacity: 0.9;
             text-align: center;
         }
@@ -319,16 +320,16 @@
 
         const THEMES = {
             CLASSIC: {
-                primary: 0x00cc44, secondary: 0xee0000, accent: 0xffaa00,
-                light: 0xffe0a0, bgFog: 0x051005, emissiveInt: 3.0
+                primary: 0x00A336, secondary: 0xC20000, accent: 0xffaa00,
+                light: 0xffe0a0, bgFog: 0x051005, emissiveInt: 3.5
             },
             ROYAL: {
                 primary: 0xd4af37, secondary: 0x888888, accent: 0xffffff,
                 light: 0xfffacd, bgFog: 0x100c05, emissiveInt: 4.0
             },
             SILENT: {
-                primary: 0x335577, secondary: 0xffffff, accent: 0x88ccff,
-                light: 0xeef5ff, bgFog: 0x020510, emissiveInt: 3.5
+                primary: 0x6688aa, secondary: 0xffffff, accent: 0xbbeeff,
+                light: 0xf8faff, bgFog: 0x050a1a, emissiveInt: 4.0
             }
         };
 
@@ -409,12 +410,20 @@
             camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
             const aspect = window.innerWidth / window.innerHeight;
             camera.position.set(0, CONFIG.camera.y, aspect < 1 ? 90 : 60);
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
+            renderer = new THREE.WebGLRenderer({
+                antialias: true,
+                alpha: true,
+                powerPreference: "high-performance",
+                logarithmicDepthBuffer: isMobile ? false : true 
+
+            });
+
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1.5 : 2));
             renderer.toneMapping = THREE.ReinhardToneMapping;
-            renderer.toneMappingExposure = 1.2;
+            renderer.toneMappingExposure = isMobile ? 2.2 : 1.2;
             container.appendChild(renderer.domElement);
 
             mainGroup = new THREE.Group();
@@ -434,12 +443,16 @@
 
         function setupLights() {
             const t = THEMES.CLASSIC;
-            ambientLight = new THREE.AmbientLight(0xffffff, 0.8); // 提高环境光强度 (从0.5到0.8)
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+            ambientLight = new THREE.AmbientLight(0xffffff, isMobile ? 2.0 : 1.2);
             scene.add(ambientLight);
-            innerLight = new THREE.PointLight(t.light, 4, 30);   // 提高点光源强度 (从3到4)
+
+            innerLight = new THREE.PointLight(t.light, isMobile ? 12 : 6, isMobile ? 60 : 40);
             innerLight.position.set(0, 6, 0);
             mainGroup.add(innerLight);
-            spotLight = new THREE.SpotLight(t.light, 1500);      // 提高聚光灯强度 (从1200到1500)
+
+            spotLight = new THREE.SpotLight(t.light, isMobile ? 3000 : 2000);
             spotLight.position.set(30, 40, 40);
             spotLight.angle = 0.5;
             spotLight.penumbra = 0.5;
@@ -449,9 +462,19 @@
         function setupPostProcessing() {
             const renderScene = new RenderPass(scene, camera);
             bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-            bloomPass.threshold = 0.8;
-            bloomPass.strength = 1.0;
-            bloomPass.radius = 0.2;
+
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+            if (isMobile) {
+                bloomPass.threshold = 0.95;   
+                bloomPass.strength = 1.5;  
+                bloomPass.radius = 0.2;      
+            } else {
+                bloomPass.threshold = 0.95;
+                bloomPass.strength = 1.0;
+                bloomPass.radius = 0.2;
+            }
+
             composer = new EffectComposer(renderer);
             composer.addPass(renderScene);
             composer.addPass(bloomPass);
@@ -466,7 +489,12 @@
                 ctx.fillStyle = g; ctx.fillRect(0, 0, 64, 64);
                 return new THREE.CanvasTexture(c);
             };
-            snowSprite = makeSprite([[0, 'rgba(255,255,255,1)'], [0.5, 'rgba(255,255,255,0.5)'], [1, 'rgba(0,0,0,0)']]);
+            snowSprite = makeSprite([
+                [0, 'rgba(255,255,255,1)'],
+                [0.3, 'rgba(255,255,255,0.8)'],
+                [0.7, 'rgba(255,255,255,0.4)'],
+                [1, 'rgba(0,0,0,0)']
+            ]);
             smokeSprite = makeSprite([[0, 'rgba(200,200,200,0.1)'], [0.6, 'rgba(100,100,100,0.05)'], [1, 'rgba(0,0,0,0)']]);
             glowSprite = makeSprite([[0, 'rgba(255,255,255,1)'], [0.3, 'rgba(255,255,255,0.2)'], [1, 'rgba(0,0,0,0)']]);
         }
@@ -482,8 +510,11 @@
 
         function createVillageLights() {
             const mat = new THREE.SpriteMaterial({
-                map: glowSprite, color: THEMES.CLASSIC.light,
-                transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending
+                map: glowSprite,
+                color: THEMES.CLASSIC.light,
+                transparent: true,
+                opacity: 0.8,  
+                blending: THREE.AdditiveBlending
             });
             for (let i = 0; i < 80; i++) {
                 const mesh = new THREE.Sprite(mat.clone());
@@ -534,10 +565,7 @@
                 const r = rMax * (0.8 + Math.random() * 0.4);
                 this.posTree.set(Math.cos(angle) * r, y, Math.sin(angle) * r);
                 if (this.type === 'PHOTO') {
-                    // 简单直接的均匀分布方法
-                    // 给照片粒子分配固定索引
                     if (this.mesh.userData.index === undefined) {
-                        // 查找该粒子在photoMeshGroup中的索引
                         const photos = photoMeshGroup.children;
                         for (let i = 0; i < photos.length; i++) {
                             if (photos[i] === this.mesh) {
@@ -545,19 +573,17 @@
                                 break;
                             }
                         }
-                        // 如果找不到，就分配一个新的索引
                         if (this.mesh.userData.index === undefined) {
                             this.mesh.userData.index = photos.length;
                         }
                     }
 
                     const index = this.mesh.userData.index;
-                    // 使用固定的槽数来确保均匀分布
-                    const totalSlots = 20;
+                    const totalSlots = 10;
                     const slotIndex = index % totalSlots;
                     const radius = 28;
                     const theta = (slotIndex / totalSlots) * Math.PI * 2;
-                    const posY = (Math.random() - 0.5) * 4; // 限制在赤道附近
+                    const posY = (Math.random() - 0.5) * 8; 
 
                     this.posScatter.set(
                         radius * Math.cos(theta),
@@ -597,6 +623,18 @@
                         this.mesh.scale.setScalar(2 + Math.random());
                     }
                     return;
+                }
+                if (this.type === 'ACCENT_BOX' || this.type === 'ACCENT_SPHERE') {
+                    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+                    const verySlowBlink = Math.sin(time * (isMobile ? 0.2 : 0.1) + this.randomOffset);
+                    const slowBlink = Math.sin(time * (isMobile ? 0.4 : 0.2) + this.randomOffset * 1.5);
+                    const pulse = Math.sin(time * 0.08 + this.randomOffset * 0.3) * 0.5 + 0.5;
+
+                    let blinkFactor = (verySlowBlink * 0.3 + slowBlink * 0.3 + pulse * 0.4 + 1.0) * 0.5;
+                    blinkFactor = isMobile ? blinkFactor * 2.0 : blinkFactor;
+
+                    this.mesh.material.emissiveIntensity = THEMES[STATE.currentTheme].emissiveInt * blinkFactor;
                 }
 
                 let target = this.posTree;
@@ -662,19 +700,25 @@
             materials.primary = new THREE.MeshStandardMaterial({ color: t.primary, roughness: 0.6, metalness: 0.2 });
             materials.secondary = new THREE.MeshStandardMaterial({ color: t.secondary, roughness: 0.2, metalness: 0.4 });
             materials.accent = new THREE.MeshStandardMaterial({
-                color: t.accent, roughness: 0.2, metalness: 0.9,
-                emissive: t.accent, emissiveIntensity: t.emissiveInt
+                color: t.accent,
+                roughness: 0.1,    
+                metalness: 0.95,   
+                emissive: t.accent,
+                emissiveIntensity: t.emissiveInt,
+                envMapIntensity: 1.5  
             });
+
+            materials.accent.emissiveMap = null;
 
             for (let i = 0; i < CONFIG.particles.count; i++) {
                 const rand = Math.random();
                 let mesh, type;
-                if (rand < 0.70) { mesh = new THREE.Mesh(boxGeo, materials.primary); type = 'PRIMARY'; }
+                if (rand < 0.7) { mesh = new THREE.Mesh(boxGeo, materials.primary); type = 'PRIMARY'; }
                 else if (rand < 0.85) { mesh = new THREE.Mesh(boxGeo, materials.accent); type = 'ACCENT_BOX'; }
                 else if (rand < 0.95) { mesh = new THREE.Mesh(sphereGeo, materials.accent); type = 'ACCENT_SPHERE'; }
                 else { mesh = new THREE.Mesh(sphereGeo, materials.secondary); type = 'SECONDARY'; }
 
-                const s = 0.3 + Math.random() * 0.4;
+                const s = 0.5 + Math.random() * 0.4;
                 mesh.scale.set(s, s, s);
                 mesh.rotation.set(Math.random() * 6, Math.random() * 6, Math.random() * 6);
                 mainGroup.add(mesh);
@@ -688,6 +732,7 @@
             const star = new THREE.Mesh(starGeo, materials.star);
             star.position.set(0, CONFIG.particles.treeHeight / 2 + 1.2, 0);
             star.rotation.z = Math.PI;
+            star.rotation.set(0, Math.PI, 0); 
             mainGroup.add(star);
             mainGroup.add(photoMeshGroup);
         }
@@ -787,7 +832,6 @@
             const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
             if (isMobile) {
-                console.log("检测到移动设备，禁用摄像头功能以优化性能。");
                 const hintText = document.getElementById('hint-text-content');
                 if (hintText) {
                     hintText.innerHTML = "放大照片: 点击照片<br>旋转视角: 拖动屏幕<br>隐藏菜单: 双击背景";
